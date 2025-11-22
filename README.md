@@ -33,16 +33,67 @@ Usuario (WhatsApp) → Kapso API → Webhook Encore
                                       ↓
                               Message Processor
                                       ↓
-                    Claude Agent SDK (Sonnet 4.5)
-                          ↓           ↓
-                    Database    WhatsApp Response
-                   (PostgreSQL)
+                         Claude Agent SDK (Sonnet 4.5)
+                                      ↓
+                              Router Agent
+                                      ↓
+              ┌──────────────┬────────┴────────┬──────────────┐
+              ↓              ↓                 ↓              ↓
+         Onboarding     Menu Planner    Shopping List   E-commerce
+           Agent           Agent            Agent          Agent
+              ↓              ↓                 ↓              ↓
+              └──────────────┴────────┬────────┴──────────────┘
+                                      ↓
+                              MCP Tools Server
+                                      ↓
+                        ┌─────────────┴─────────────┐
+                        ↓                           ↓
+                   Database                  WhatsApp API
+                  (PostgreSQL)              (Send Messages)
 ```
+
+### 🎯 Arquitectura de Subagentes
+
+PlanEat utiliza una arquitectura de **Router + Subagentes especializados** para manejar diferentes aspectos de la experiencia del usuario:
+
+#### **Router Agent** (Main)
+
+- Analiza cada mensaje del usuario
+- Identifica la intención principal
+- Delega al agente especializado apropiado
+- Modelo: Claude Sonnet 4.5
+
+#### **Subagentes Especializados:**
+
+1. **Onboarding Agent** 👋
+
+   - Registro de nuevos usuarios
+   - Configuración de perfiles familiares
+   - Tools: `create_household`, `add_household_members`
+
+2. **Menu Planner Agent** 🍽️
+
+   - Generación de menús semanales personalizados
+   - Adaptado a preferencias y restricciones
+   - Tools: `get_user_context`, `send_whatsapp_message`
+
+3. **Shopping List Agent** 🛒
+
+   - Creación de listas de compras organizadas
+   - Extracción de ingredientes de menús
+   - Tools: `get_user_context`, `send_whatsapp_message`
+
+4. **E-commerce Agent** 📦
+   - Asistencia con pedidos online (en desarrollo)
+   - Integración con supermercados chilenos
+   - Tools: `get_user_context`, `send_whatsapp_message`
 
 ### Servicios
 
 - **`whatsapp/`**: Servicio principal con webhooks, procesamiento de mensajes y tools del agente
-- **Base de datos**: Gestión de usuarios, hogares, miembros y estado de conversaciones
+  - `agents/`: Definiciones de los 4 subagentes especializados
+  - `tools/`: 5 herramientas MCP para interactuar con el sistema
+- **Base de datos**: Gestión de usuarios, hogares, miembros y estado de conversaciones con persistencia de sesión
 
 ## 🚀 Características Principales
 
