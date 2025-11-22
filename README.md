@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="project-logo.png" alt="PlanEat Logo" width="500"/>
+</div>
+
 # 🍽️ PlanEat - Tu Asistente Inteligente de Planificación de Comidas
 
 **PlanEat** es un asistente conversacional por WhatsApp que ayuda a familias chilenas a planificar sus comidas semanales, gestionar preferencias alimentarias y generar listas de compras inteligentes.
