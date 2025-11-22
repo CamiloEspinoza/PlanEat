@@ -1,7 +1,9 @@
 # Configuración de Dominios Personalizados para PlanEat
 
 ## 🎯 Objetivo
+
 Configurar:
+
 - `www.planeat.life` → Landing page
 - `api.planeat.life` → API de WhatsApp
 
@@ -41,6 +43,7 @@ planeat.life        ALIAS    <encore-generated-domain>.encr.app    TTL 3600
 2. Haz clic en **Add Custom Domain**
 
 **Para la landing page:**
+
 ```
 Domain: www.planeat.life
 Service: landing
@@ -48,8 +51,9 @@ Path: / (or *)
 ```
 
 **Para la API:**
+
 ```
-Domain: api.planeat.life  
+Domain: api.planeat.life
 Service: whatsapp
 Path: /
 ```
@@ -76,6 +80,7 @@ Una vez que los dominios estén activos, actualiza el webhook URL en Kapso:
 **Webhook URL:** `https://api.planeat.life/webhooks/whatsapp`
 
 Pasos:
+
 1. Ve al dashboard de Kapso
 2. Configuración de Webhooks
 3. Actualiza la URL del webhook
@@ -84,6 +89,7 @@ Pasos:
 ### 5. Probar el Flujo Completo
 
 1. **Landing page:** Visita `https://www.planeat.life`
+
    - ✅ Debe cargar correctamente
    - ✅ El formulario debe funcionar
    - ✅ Debe enviar mensajes por WhatsApp
@@ -113,6 +119,7 @@ export const gateway = new Gateway({
 ```
 
 Con esta configuración, Encore automáticamente:
+
 - Rutea `api.planeat.life/*` → endpoints expuestos
 - Maneja CORS correctamente
 - Provee certificados SSL
@@ -138,16 +145,19 @@ Usuario → www.planeat.life (Landing)
 ## 🚨 Troubleshooting
 
 ### DNS no propaga
+
 - Espera hasta 24-48 horas (aunque usualmente es minutos)
 - Verifica con `dig` o `nslookup`
 - Limpia cache DNS local: `sudo dscacheutil -flushcache` (macOS)
 
 ### SSL Error
+
 - Encore auto-genera certificados Let's Encrypt
 - Verifica que los dominios estén correctamente apuntando
 - Contacta soporte de Encore si persiste
 
 ### Webhook no funciona
+
 - Verifica que Kapso tenga la URL correcta
 - Revisa logs en Encore Dashboard
 - Prueba con `curl -X POST https://api.planeat.life/webhooks/whatsapp`
@@ -157,4 +167,3 @@ Usuario → www.planeat.life (Landing)
 - [Encore Custom Domains Docs](https://encore.dev/docs/deploy/custom-domains)
 - [Encore Gateway Docs](https://encore.dev/docs/ts/primitives/api-gateway)
 - [Kapso Webhook Configuration](https://docs.kapso.ai/docs/platform/webhooks)
-
