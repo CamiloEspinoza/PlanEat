@@ -3,6 +3,7 @@ import { api } from "encore.dev/api";
 import { processMessage } from "./message-processor";
 import { json } from "node:stream/consumers";
 import { KapsoWebhookPayload } from "./types";
+import { KAPSO_PHONE_NUMBER_ID } from "./secrets";
 
 // Endpoint raw para recibir webhooks de Kapso
 // https://docs.kapso.ai/docs/platform/webhooks/event-types
@@ -10,15 +11,47 @@ export const kapsoWebhook = api.raw(
   { expose: true, path: "/webhooks/whatsapp", method: "POST" },
   async (req, resp) => {
     try {
-      const body = await json(req);
+      const body = (await json(req)) as any;
 
-      // Solo procesar mensajes entrantes (inbound)
-      if (body.message?.kapso?.direction === "inbound") {
-        // Procesar de forma asíncrona y responder inmediatamente
-        processMessage(body).catch((err) =>
-          console.error("Error processing message:", err)
-        );
+      // DEBUG: Log del webhook completo
+      console.log("=== WEBHOOK RECIBIDO ===");
+      console.log("Type:", body.type);
+      console.log("Is batch?:", body.batch);
+      console.log("Data length:", body.data?.length);
+
+      // Kapso envía los webhooks en formato batch
+      if (body.batch && body.data && Array.isArray(body.data)) {
+        console.log(`📦 Processing ${body.data.length} messages in batch`);
+
+        for (const item of body.data) {
+          const webhookData = item as KapsoWebhookPayload;
+          console.log("Message type:", webhookData.message?.type);
+          console.log("Direction:", webhookData.message?.kapso?.direction);
+          console.log("From:", webhookData.conversation?.phone_number);
+
+          // Solo procesar mensajes entrantes (inbound)
+          if (webhookData.message?.kapso?.direction === "inbound") {
+            console.log("✅ Procesando mensaje inbound");
+            // Procesar de forma asíncrona y responder inmediatamente
+            processMessage(webhookData).catch((err) =>
+              console.error("Error processing message:", err)
+            );
+          } else {
+            console.log("⏭️  Mensaje no es inbound, ignorando");
+          }
+        }
+      } else {
+        // Formato no-batch (por si acaso)
+        const webhookData = body as KapsoWebhookPayload;
+        if (webhookData.message?.kapso?.direction === "inbound") {
+          console.log("✅ Procesando mensaje inbound (no-batch)");
+          processMessage(webhookData).catch((err) =>
+            console.error("Error processing message:", err)
+          );
+        }
       }
+
+      console.log("========================");
 
       // Responder rápido a Kapso para no bloquear webhook
       resp.writeHead(200);
@@ -58,10 +91,10 @@ export const testWebhook = api(
         id: "test-conv",
         phone_number: params.from,
         status: "active",
-        phone_number_id: process.env.KAPSO_PHONE_NUMBER_ID!,
+        phone_number_id: KAPSO_PHONE_NUMBER_ID(),
       },
       is_new_conversation: false,
-      phone_number_id: process.env.KAPSO_PHONE_NUMBER_ID!,
+      phone_number_id: KAPSO_PHONE_NUMBER_ID(),
     };
 
     await processMessage(mockWebhook);

@@ -2,6 +2,7 @@
 // https://docs.kapso.ai/docs/whatsapp/typescript-sdk/introduction
 
 import { WhatsAppClient } from '@kapso/whatsapp-cloud-api';
+import { KAPSO_API_KEY, KAPSO_PHONE_NUMBER_ID } from './secrets';
 
 let whatsappClient: WhatsAppClient | null = null;
 
@@ -9,7 +10,7 @@ export function getWhatsAppClient(): WhatsAppClient {
   if (!whatsappClient) {
     whatsappClient = new WhatsAppClient({ 
       baseUrl: 'https://app.kapso.ai/api/meta/',
-      kapsoApiKey: process.env.KAPSO_API_KEY!
+      kapsoApiKey: KAPSO_API_KEY()
     });
   }
   return whatsappClient;
@@ -19,7 +20,7 @@ export function getWhatsAppClient(): WhatsAppClient {
 export async function sendTextMessage(to: string, body: string) {
   const client = getWhatsAppClient();
   return await client.messages.sendText({ 
-    phoneNumberId: process.env.KAPSO_PHONE_NUMBER_ID!,
+    phoneNumberId: KAPSO_PHONE_NUMBER_ID(),
     to, 
     body 
   });
@@ -33,7 +34,7 @@ export async function sendInteractiveMessage(
 ) {
   const client = getWhatsAppClient();
   return await client.messages.sendInteractive({ 
-    phoneNumberId: process.env.KAPSO_PHONE_NUMBER_ID!,
+    phoneNumberId: KAPSO_PHONE_NUMBER_ID(),
     to,
     type: 'button',
     body: { text: bodyText },
