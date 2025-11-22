@@ -2,6 +2,7 @@
 import { KapsoWebhookPayload } from "./types";
 import { processWithAgentSDK } from "./claude-agent-client";
 import { processWithClaude } from "./claude-client";
+import { markMessageAsRead } from "./whatsapp-client";
 
 // Flag para cambiar entre Agent SDK y API directa
 const USE_AGENT_SDK = true;
@@ -12,6 +13,7 @@ export async function processMessage(webhookData: KapsoWebhookPayload) {
   const { message, conversation } = webhookData;
 
   // Extraer datos del mensaje
+  const messageId = message.id;
   const from = conversation.phone_number;
   const messageText = message.text?.body || "";
   const messageType = message.type;
@@ -27,9 +29,13 @@ export async function processMessage(webhookData: KapsoWebhookPayload) {
   }
 
   try {
+    // Marcar mensaje como leído y mostrar indicador de typing
+    console.log(`👀 Marking message as read with typing indicator...`);
+    await markMessageAsRead(messageId, true);
+    
     if (USE_AGENT_SDK) {
       console.log("🤖 Using Claude Agent SDK...");
-      await processWithAgentSDK(messageText, from);
+      await processWithAgentSDK(messageText, from, messageId);
     } else {
       console.log("🤖 Using Claude API directly...");
       await processWithClaude(messageText, from);

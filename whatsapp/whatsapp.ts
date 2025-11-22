@@ -4,6 +4,7 @@ import { processMessage } from "./message-processor";
 import { json } from "node:stream/consumers";
 import { KapsoWebhookPayload } from "./types";
 import { KAPSO_PHONE_NUMBER_ID } from "./secrets";
+import { sendTextMessage } from "./whatsapp-client";
 
 // Endpoint raw para recibir webhooks de Kapso
 // https://docs.kapso.ai/docs/platform/webhooks/event-types
@@ -99,5 +100,69 @@ export const testWebhook = api(
 
     await processMessage(mockWebhook);
     return { success: true, message: "Webhook procesado" };
+  }
+);
+
+// Endpoint para iniciar conversación desde la landing
+interface StartConversationParams {
+  phoneNumber: string;
+}
+
+interface StartConversationResponse {
+  success: boolean;
+  message: string;
+}
+
+export const startConversation = api(
+  { expose: true, method: "POST", path: "/start" },
+  async (
+    params: StartConversationParams
+  ): Promise<StartConversationResponse> => {
+    try {
+      console.log(`📱 Iniciando conversación con ${params.phoneNumber}`);
+
+      // Simular que el usuario escribió "Hola" para activar el agente
+      const mockWebhook: KapsoWebhookPayload = {
+        message: {
+          id: "landing-" + Date.now(),
+          timestamp: String(Math.floor(Date.now() / 1000)),
+          type: "text",
+          text: { body: "Hola" },
+          kapso: {
+            direction: "inbound",
+            status: "received",
+            processing_status: "pending",
+            origin: "cloud_api",
+            has_media: false,
+          },
+        },
+        conversation: {
+          id: "landing-conv-" + params.phoneNumber,
+          phone_number: params.phoneNumber,
+          status: "active",
+          phone_number_id: KAPSO_PHONE_NUMBER_ID(),
+        },
+        is_new_conversation: true,
+        phone_number_id: KAPSO_PHONE_NUMBER_ID(),
+      };
+
+      // Procesar el mensaje con el agente (asíncrono)
+      processMessage(mockWebhook).catch((err) =>
+        console.error("Error processing landing message:", err)
+      );
+
+      console.log(`✅ Conversación iniciada para ${params.phoneNumber}`);
+
+      return {
+        success: true,
+        message: "Conversación iniciada exitosamente",
+      };
+    } catch (error: any) {
+      console.error("❌ Error al iniciar conversación:", error);
+      return {
+        success: false,
+        message: error.message || "Error al iniciar conversación",
+      };
+    }
   }
 );

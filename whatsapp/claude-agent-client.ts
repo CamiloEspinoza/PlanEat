@@ -8,6 +8,7 @@ import {
   createHouseholdTool,
   addHouseholdMembersTool,
   saveConversationStateTool,
+  sendReactionTool,
 } from "./tools";
 import { PLANEAT_AGENTS, routerPrompt } from "./agents";
 
@@ -29,6 +30,7 @@ const planeatServer = createSdkMcpServer({
     createHouseholdTool,
     addHouseholdMembersTool,
     saveConversationStateTool,
+    sendReactionTool,
   ],
 });
 
@@ -37,7 +39,18 @@ async function getOrCreateSession(
   phoneNumber: string
 ): Promise<{ sessionId: string | undefined; isNew: boolean }> {
   try {
-    // Buscar conversación activa reciente (últimas 2 horas)
+    // PRIMERO: Verificar si el usuario existe en la base de datos
+    const userExists = await db.queryRow`
+      SELECT phone_number FROM users WHERE phone_number = ${phoneNumber}
+    `;
+
+    // Si el usuario NO existe, SIEMPRE iniciar nueva sesión (no reanudar cache anterior)
+    if (!userExists) {
+      console.log("🆕 User doesn't exist - Starting fresh session (no resume)");
+      return { sessionId: undefined, isNew: true };
+    }
+
+    // Si el usuario existe, buscar sesión activa reciente (últimas 2 horas)
     const conversation = await db.queryRow`
       SELECT session_id, last_message_at
       FROM conversations
@@ -52,7 +65,7 @@ async function getOrCreateSession(
       return { sessionId: conversation.session_id, isNew: false };
     }
 
-    console.log("🆕 Starting new session");
+    console.log("🆕 Starting new session for existing user");
     return { sessionId: undefined, isNew: true };
   } catch (error) {
     console.error("❌ Error getting session:", error);
@@ -91,7 +104,8 @@ async function saveSession(
 // Procesar mensaje con Claude Agent SDK
 export async function processWithAgentSDK(
   userMessage: string,
-  phoneNumber: string
+  phoneNumber: string,
+  messageId?: string
 ): Promise<void> {
   console.log("🤖 Using Claude Agent SDK");
 
@@ -102,9 +116,15 @@ export async function processWithAgentSDK(
 
   const prompt = `Usuario: ${phoneNumber}
 Mensaje: "${userMessage}"
+${messageId ? `Message ID: ${messageId}` : ""}
 
 Analiza el mensaje y delega al agente especializado apropiado.
-Recuerda: SIEMPRE responde al usuario usando send_whatsapp_message("${phoneNumber}", "...")`;
+Recuerda: SIEMPRE responde al usuario usando send_whatsapp_message("${phoneNumber}", "...")
+${
+  messageId
+    ? `OPCIONAL: Puedes reaccionar al mensaje usando send_reaction("${phoneNumber}", "${messageId}", emoji) solo si es muy apropiado`
+    : ""
+}`;
 
   try {
     // Configurar API key en el entorno antes de llamar al SDK
@@ -137,6 +157,7 @@ Recuerda: SIEMPRE responde al usuario usando send_whatsapp_message("${phoneNumbe
         "create_household",
         "add_household_members",
         "save_conversation_state",
+        "send_reaction",
       ],
       mcpServers: {
         planeat: planeatServer,

@@ -4,10 +4,12 @@ import { AgentDefinition } from "@anthropic-ai/claude-agent-sdk";
  * Shopping List Agent - Genera listas de compras optimizadas
  */
 export const shoppingListAgent: AgentDefinition = {
-  description: "Genera listas de compras optimizadas a partir de menús o ingredientes mencionados",
+  description:
+    "Genera listas de compras optimizadas a partir de menús o ingredientes mencionados",
   tools: [
-    "get_user_context",
-    "send_whatsapp_message"
+    "mcp__planeat__get_user_context",
+    "mcp__planeat__send_whatsapp_message",
+    "mcp__planeat__send_reaction",
   ],
   prompt: `Eres el Shopping List Specialist de PlanEat. Generas listas de compras organizadas y prácticas.
 
@@ -40,7 +42,12 @@ IMPORTANTE:
 - Agrupa para facilitar compra
 - Sugiere alternativas si es relevante
 
+**REACCIONES (OPCIONAL):**
+PUEDES usar send_reaction cuando agregue valor:
+- 👍 Al completar una lista de compras compleja
+- 💪 Si piden ayuda para organizarse mejor
+Usa reacciones con moderación - no en cada interacción.
+
 SIEMPRE responde usando send_whatsapp_message.`,
   model: "sonnet",
 };
-

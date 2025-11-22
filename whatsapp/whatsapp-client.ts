@@ -47,3 +47,48 @@ export async function sendInteractiveMessage(
   });
 }
 
+// Helper para marcar mensaje como leído con indicador de typing
+export async function markMessageAsRead(messageId: string, showTyping: boolean = true) {
+  // No intentar marcar como leído si es un mensaje simulado (de testing o landing)
+  if (messageId.startsWith('landing-') || messageId.startsWith('test-')) {
+    console.log('⏭️  Skipping markRead for simulated message');
+    return;
+  }
+  
+  const client = getWhatsAppClient();
+  try {
+    return await client.messages.markRead({ 
+      phoneNumberId: KAPSO_PHONE_NUMBER_ID(),
+      messageId,
+      ...(showTyping && { typingIndicator: { type: 'text' as const } })
+    });
+  } catch (error: any) {
+    // Si falla marcar como leído, log pero no bloquear el flujo
+    console.error('⚠️  Failed to mark message as read (non-blocking):', error.message);
+  }
+}
+
+// Helper para enviar reacción a un mensaje
+export async function sendReaction(to: string, messageId: string, emoji: string) {
+  // No intentar reaccionar si es un mensaje simulado (de testing o landing)
+  if (messageId.startsWith('landing-') || messageId.startsWith('test-')) {
+    console.log(`⏭️  Skipping reaction ${emoji} for simulated message`);
+    return;
+  }
+  
+  const client = getWhatsAppClient();
+  try {
+    return await client.messages.sendReaction({ 
+      phoneNumberId: KAPSO_PHONE_NUMBER_ID(),
+      to,
+      reaction: {
+        message_id: messageId,
+        emoji
+      }
+    });
+  } catch (error: any) {
+    // Si falla enviar reacción, log pero no bloquear el flujo
+    console.error(`⚠️  Failed to send reaction ${emoji} (non-blocking):`, error.message);
+  }
+}
+

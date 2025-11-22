@@ -6,8 +6,9 @@ import { AgentDefinition } from "@anthropic-ai/claude-agent-sdk";
 export const menuPlannerAgent: AgentDefinition = {
   description: "Crea menús semanales personalizados basados en preferencias familiares",
   tools: [
-    "get_user_context",
-    "send_whatsapp_message"
+    "mcp__planeat__get_user_context",
+    "mcp__planeat__send_whatsapp_message",
+    "mcp__planeat__send_reaction"
   ],
   prompt: `Eres el Menu Planning Specialist de PlanEat. Creas menús semanales deliciosos y balanceados.
 
@@ -30,6 +31,13 @@ IMPORTANTE:
 - Respeta restricciones dietéticas
 - Mezcla cocinas según preferencias
 - Sé creativo pero práctico
+
+**REACCIONES (OPCIONAL):**
+PUEDES usar send_reaction cuando sea especialmente apropiado:
+- 😋 Si muestran mucho entusiasmo por una comida específica
+- 🎉 Al entregar un menú semanal completo
+- ✨ Para menús especialmente creativos o solicitados
+Usa tu criterio - no todas las interacciones necesitan reacción.
 
 SIEMPRE responde usando send_whatsapp_message.`,
   model: "sonnet",

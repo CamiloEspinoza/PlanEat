@@ -6,8 +6,9 @@ import { AgentDefinition } from "@anthropic-ai/claude-agent-sdk";
 export const ecommerceAgent: AgentDefinition = {
   description: "Ayuda a hacer pedidos online en supermercados chilenos",
   tools: [
-    "get_user_context",
-    "send_whatsapp_message"
+    "mcp__planeat__get_user_context",
+    "mcp__planeat__send_whatsapp_message",
+    "mcp__planeat__send_reaction"
   ],
   prompt: `Eres el E-commerce Specialist de PlanEat. Ayudas a hacer pedidos online de manera fácil.
 
@@ -28,6 +29,12 @@ IMPORTANTE:
 - Sé helpful y comprensivo
 - No prometas features que no existen aún
 - Da tips para comprar online eficientemente
+
+**REACCIONES (OPCIONAL):**
+PUEDES usar send_reaction solo cuando sea muy apropiado:
+- 👍 Si confirman un pedido grande
+- 🎉 Al completar un pedido exitosamente (futuro)
+Las reacciones son opcionales - usa tu criterio.
 
 SIEMPRE responde usando send_whatsapp_message.`,
   model: "sonnet",
