@@ -49,12 +49,16 @@ export class FrestClient {
       },
     });
 
-    // Interceptor para logging
+    // Interceptor para logging detallado
     this.client.interceptors.request.use(
       (config) => {
         console.log(
           `🌐 [Frest API] ${config.method?.toUpperCase()} ${config.url}`
         );
+        console.log(`   Headers:`, JSON.stringify(config.headers, null, 2));
+        if (config.data) {
+          console.log(`   Body:`, JSON.stringify(config.data, null, 2));
+        }
         return config;
       },
       (error) => {
@@ -70,6 +74,7 @@ export class FrestClient {
             response.config.url
           } - ${response.status}`
         );
+        console.log(`   Response:`, JSON.stringify(response.data, null, 2));
         return response;
       },
       (error) => {
@@ -79,6 +84,7 @@ export class FrestClient {
               error.config?.url
             } - ${error.response.status}`
           );
+          console.error(`   Error Response:`, JSON.stringify(error.response.data, null, 2));
         } else {
           console.error(`❌ [Frest API] Network error:`, error.message);
         }
@@ -196,7 +202,7 @@ export class FrestClient {
 
     try {
       const response = await this.retryRequest(() =>
-        this.client.post<FrestApiResponse<BuscarUsuarioResponse>>(
+        this.client.post<any>( // Cambiado a any porque Frest envía estructura diferente
           "/usuarios/buscar-por-telefono",
           { telefono } as BuscarUsuarioRequest
         )
@@ -209,7 +215,13 @@ export class FrestClient {
         );
       }
 
-      return response.data.data!;
+      // Frest envía: { estado, encontrado, data, mensaje }
+      // Retornamos la estructura completa que incluye "encontrado"
+      return {
+        encontrado: response.data.encontrado,
+        data: response.data.data,
+        mensaje: response.data.mensaje
+      };
     } catch (error) {
       return this.handleError(error);
     }

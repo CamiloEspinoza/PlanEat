@@ -72,15 +72,19 @@ export async function executeFrestConsultarProductos(input: {
       }));
 
     // Formatear productos no encontrados con alternativas
-    const noEncontrados = result.no_encontrados.map((ne) => ({
-      buscado: ne.buscado,
-      alternativas: ne.alternativas.map((alt) => ({
-        producto_id: alt.producto_id,
-        nombre: alt.nombre,
-        precio: alt.precio,
-        stock: alt.stock_disponible,
-      })),
-    }));
+    const noEncontrados = Array.isArray(result.no_encontrados) 
+      ? result.no_encontrados.map((ne) => ({
+          buscado: ne.buscado,
+          alternativas: Array.isArray(ne.alternativas) 
+            ? ne.alternativas.map((alt) => ({
+                producto_id: alt.producto_id,
+                nombre: alt.nombre,
+                precio: alt.precio,
+                stock: alt.stock_disponible,
+              }))
+            : [],
+        }))
+      : [];
 
     return JSON.stringify({
       success: true,
