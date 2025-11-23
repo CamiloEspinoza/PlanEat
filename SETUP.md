@@ -54,17 +54,7 @@ node --version  # Debe ser v20.x
 npm --version
 ```
 
-### 3. Instalar PostgreSQL
-
-```bash
-# Instalar PostgreSQL 14+
-sudo apt install -y postgresql postgresql-contrib
-
-# Verificar que está corriendo
-sudo systemctl status postgresql
-```
-
-### 4. Instalar PM2 (Process Manager)
+### 3. Instalar PM2 (Process Manager)
 
 ```bash
 sudo npm install -g pm2
@@ -73,7 +63,7 @@ sudo npm install -g pm2
 pm2 --version
 ```
 
-### 5. Instalar Nginx
+### 4. Instalar Nginx
 
 ```bash
 sudo apt install -y nginx
@@ -83,7 +73,7 @@ sudo systemctl start nginx
 sudo systemctl enable nginx
 ```
 
-### 6. Instalar Git
+### 5. Instalar Git
 
 ```bash
 sudo apt install -y git
@@ -157,65 +147,53 @@ FREST_API_KEY=tu_frest_api_key
 
 ---
 
-## 🗄️ Base de Datos PostgreSQL
+## 🗄️ Base de Datos AWS RDS
 
-### 1. Configurar PostgreSQL
+### 1. Requisitos Previos
 
-```bash
-# Cambiar a usuario postgres
-sudo su - postgres
+Debes tener una instancia de AWS RDS PostgreSQL ya creada:
 
-# Entrar a psql
-psql
-```
+- **Engine:** PostgreSQL 14.x o superior
+- **Instance:** db.t3.micro o superior
+- **Database name:** `planeat`
+- **Master username:** (tu usuario)
+- **Security Group:** Configurado para permitir conexiones desde tu servidor
 
-### 2. Crear Base de Datos y Usuario
+### 2. Configurar Conexión a RDS
 
-```sql
--- Crear usuario
-CREATE USER planeat_user WITH PASSWORD 'password_seguro_aqui';
-
--- Crear base de datos
-CREATE DATABASE planeat OWNER planeat_user;
-
--- Dar permisos
-GRANT ALL PRIVILEGES ON DATABASE planeat TO planeat_user;
-
--- Salir
-\q
-exit
-```
-
-### 3. Configurar Acceso Remoto (Opcional)
-
-Si necesitas acceder desde otra máquina:
+El `DATABASE_URL` en tu `.env` debe apuntar a tu instancia RDS:
 
 ```bash
-# Editar configuración de PostgreSQL
-sudo nano /etc/postgresql/14/main/postgresql.conf
+# Formato de DATABASE_URL para RDS
+DATABASE_URL=postgresql://username:password@your-rds-endpoint.us-east-1.rds.amazonaws.com:5432/planeat
+
+# Ejemplo real:
+DATABASE_URL=postgresql://planeat_admin:MiPassword123@planeat-db.abc123xyz.us-east-1.rds.amazonaws.com:5432/planeat
 ```
 
-Buscar y cambiar:
+**Componentes del URL:**
+- `username`: Tu usuario master de RDS
+- `password`: Tu contraseña master
+- `your-rds-endpoint`: El endpoint de tu instancia RDS (lo encuentras en AWS Console)
+- `planeat`: Nombre de tu base de datos
 
-```
-listen_addresses = 'localhost'  →  listen_addresses = '*'
-```
+### 3. Verificar Conexión
 
-```bash
-# Editar reglas de acceso
-sudo nano /etc/postgresql/14/main/pg_hba.conf
-```
-
-Agregar al final:
-
-```
-host    all             all             0.0.0.0/0               md5
-```
+Antes de continuar, verifica que puedes conectarte a RDS desde el servidor:
 
 ```bash
-# Reiniciar PostgreSQL
-sudo systemctl restart postgresql
+# Instalar cliente de PostgreSQL (solo para testing)
+sudo apt install -y postgresql-client
+
+# Probar conexión
+psql "postgresql://username:password@your-rds-endpoint.rds.amazonaws.com:5432/planeat" -c "SELECT version();"
 ```
+
+Si la conexión falla, verifica:
+- ✅ Security Group de RDS permite puerto 5432 desde la IP de tu servidor
+- ✅ RDS tiene "Publicly accessible" en Yes (o está en la misma VPC que tu servidor)
+- ✅ Usuario y password son correctos
+- ✅ El endpoint es correcto
 
 ### 4. Ejecutar Migraciones
 
@@ -237,16 +215,13 @@ Deberías ver:
 ✅ Migration 5_add_indexes.up.sql completed
 ```
 
-### 5. Verificar Base de Datos
+### 5. Verificar Tablas Creadas
 
 ```bash
-# Conectar a la base de datos
-psql -U planeat_user -d planeat -h localhost
+# Conectar a RDS para verificar
+psql "$DATABASE_URL" -c "\dt"
 
-# Listar tablas
-\dt
-
-# Verificar tablas creadas:
+# Deberías ver las tablas:
 # - users
 # - households
 # - household_members
@@ -254,10 +229,9 @@ psql -U planeat_user -d planeat -h localhost
 # - shopping_lists
 # - menu_plans
 # - recipes
-
-# Salir
-\q
 ```
+
+**Nota:** Una vez que las migraciones estén completas, no necesitas tener `postgresql-client` instalado en el servidor.
 
 ---
 
@@ -537,12 +511,20 @@ pm2 restart planeat
 ### Backup de Base de Datos
 
 ```bash
-# Crear backup
-pg_dump -U planeat_user planeat > backup_$(date +%Y%m%d).sql
+# Crear backup desde RDS
+pg_dump "$DATABASE_URL" > backup_$(date +%Y%m%d).sql
+
+# O directamente:
+pg_dump -h your-rds-endpoint.rds.amazonaws.com -U username -d planeat > backup_$(date +%Y%m%d).sql
+
+# Comprimir backup
+gzip backup_$(date +%Y%m%d).sql
 
 # Restaurar backup
-psql -U planeat_user planeat < backup_20251122.sql
+psql "$DATABASE_URL" < backup_20251122.sql
 ```
+
+**Nota:** AWS RDS también ofrece snapshots automáticos. Configúralos en AWS Console > RDS > Automated Backups.
 
 ### Monitoreo
 
@@ -581,20 +563,26 @@ pm2 delete planeat
 pm2 start ecosystem.config.cjs
 ```
 
-### Error de Conexión a PostgreSQL
+### Error de Conexión a RDS
 
 ```bash
-# Verificar que PostgreSQL está corriendo
-sudo systemctl status postgresql
+# Verificar DATABASE_URL
+echo $DATABASE_URL
 
-# Probar conexión manualmente
-psql -U planeat_user -d planeat -h localhost
+# Probar conexión desde el servidor
+psql "$DATABASE_URL" -c "SELECT 1;"
 
-# Ver logs de PostgreSQL
-sudo tail -f /var/log/postgresql/postgresql-14-main.log
+# Verificar que la app puede conectarse
+pm2 logs planeat | grep "Database"
 
-# Reiniciar PostgreSQL
-sudo systemctl restart postgresql
+# Si falla, verifica:
+# 1. Security Group de RDS permite puerto 5432 desde la IP de tu servidor
+# 2. DATABASE_URL está correcto en .env
+# 3. RDS está en estado "Available" en AWS Console
+# 4. El endpoint de RDS es correcto
+
+# Ver IP pública de tu servidor (para configurar Security Group)
+curl ifconfig.me
 ```
 
 ### Nginx Retorna 502 Bad Gateway
@@ -674,8 +662,9 @@ pm2 logs planeat | grep Frest
 ### Durante Deploy
 
 - [ ] ✅ Node.js 20.x instalado
-- [ ] ✅ PostgreSQL instalado y configurado
-- [ ] ✅ Base de datos creada con usuario
+- [ ] ✅ Instancia AWS RDS PostgreSQL disponible
+- [ ] ✅ Security Group de RDS configurado
+- [ ] ✅ Conexión a RDS verificada desde el servidor
 - [ ] ✅ Migraciones ejecutadas correctamente
 - [ ] ✅ Variables de entorno configuradas
 - [ ] ✅ Aplicación compilada sin errores
@@ -711,7 +700,7 @@ pm2 logs planeat | grep Frest
 
 - [Documentación de PM2](https://pm2.keymetrics.io/)
 - [Nginx Official Docs](https://nginx.org/en/docs/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [AWS RDS PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html)
 - [Let's Encrypt](https://letsencrypt.org/)
 - [Kapso WhatsApp API](https://docs.kapso.io/)
 - [Anthropic Claude API](https://docs.anthropic.com/)
