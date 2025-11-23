@@ -280,3 +280,227 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Compone una imagen del menú semanal completo
+ * @param menuData - Objeto con los platos de cada día
+ * @param householdSize - Cantidad de personas (opcional)
+ * @returns Buffer con la imagen en formato PNG
+ */
+export async function composeWeeklyMenuImage(
+  menuData: {
+    [key: string]: {
+      nombre: string;
+      descripcion?: string;
+    };
+  },
+  householdSize?: number
+): Promise<Buffer> {
+  console.log("🖼️ Composing weekly menu image");
+
+  try {
+    const width = 1080;
+    const padding = 40;
+
+    // Generar SVG del menú
+    const svg = generateWeeklyMenuSVG(menuData, width, padding, householdSize);
+
+    // Calcular altura basada en el contenido
+    const height = calculateMenuHeight(menuData, padding);
+
+    // Renderizar SVG a imagen
+    const imageBuffer = await sharp(Buffer.from(svg))
+      .resize(width, height)
+      .png()
+      .toBuffer();
+
+    console.log(`✅ Weekly menu image composed (${imageBuffer.length} bytes)`);
+    return imageBuffer;
+  } catch (error: any) {
+    console.error("❌ Error composing weekly menu image:", error.message);
+    throw new Error(`Failed to compose menu image: ${error.message}`);
+  }
+}
+
+/**
+ * Genera el SVG del menú semanal en formato tabla
+ * Días como columnas, comidas como filas
+ */
+function generateWeeklyMenuSVG(
+  menuData: any,
+  width: number,
+  padding: number,
+  householdSize?: number
+): string {
+  let yPosition = padding + 20;
+  let svgContent = "";
+
+  // Fondo degradado para header
+  svgContent += `
+    <defs>
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <rect width="${width}" height="140" fill="url(#grad1)"/>
+  `;
+
+  // Título principal
+  svgContent += `
+    <text x="${width / 2}" y="${yPosition + 40}" 
+          font-family="DejaVu Sans, Liberation Sans, sans-serif" 
+          font-size="48" font-weight="bold" fill="white" 
+          text-anchor="middle">
+      🗓️ Menú Semanal
+    </text>
+  `;
+  yPosition += 60;
+
+  // Subtítulo con tamaño del hogar
+  if (householdSize) {
+    svgContent += `
+      <text x="${width / 2}" y="${yPosition}" 
+            font-family="DejaVu Sans, Liberation Sans, sans-serif" 
+            font-size="24" fill="white" 
+            text-anchor="middle" opacity="0.9">
+        Para ${householdSize} persona${householdSize > 1 ? "s" : ""}
+      </text>
+    `;
+  }
+  yPosition += 60;
+
+  // Configuración de la tabla
+  const dias = [
+    { key: "lunes", short: "LUN", emoji: "🌟", color: "#3498db" },
+    { key: "martes", short: "MAR", emoji: "🔥", color: "#e74c3c" },
+    { key: "miercoles", short: "MIÉ", emoji: "🌮", color: "#f39c12" },
+    { key: "jueves", short: "JUE", emoji: "🐟", color: "#1abc9c" },
+    { key: "viernes", short: "VIE", emoji: "🍕", color: "#9b59b6" },
+    { key: "sabado", short: "SÁB", emoji: "🥩", color: "#e67e22" },
+    { key: "domingo", short: "DOM", emoji: "🍗", color: "#2ecc71" },
+  ];
+
+  const tableStartY = yPosition;
+  const cellWidth = (width - padding * 2) / 7; // 7 columnas (días)
+  const headerHeight = 80;
+  const rowHeight = 120;
+
+  // Header de la tabla (días de la semana)
+  for (let i = 0; i < dias.length; i++) {
+    const dia = dias[i];
+    const x = padding + i * cellWidth;
+
+    // Fondo del header
+    svgContent += `
+      <rect x="${x}" y="${tableStartY}" 
+            width="${cellWidth}" height="${headerHeight}" 
+            fill="${dia.color}" opacity="0.15" 
+            stroke="#e0e0e0" stroke-width="1"/>
+    `;
+
+    // Emoji del día
+    svgContent += `
+      <text x="${x + cellWidth / 2}" y="${tableStartY + 35}" 
+            font-family="DejaVu Sans, Liberation Sans, sans-serif" 
+            font-size="28" 
+            text-anchor="middle">
+        ${dia.emoji}
+      </text>
+    `;
+
+    // Nombre del día (corto)
+    svgContent += `
+      <text x="${x + cellWidth / 2}" y="${tableStartY + 65}" 
+            font-family="DejaVu Sans, Liberation Sans, sans-serif" 
+            font-size="20" font-weight="bold" fill="#2c3e50" 
+            text-anchor="middle">
+        ${dia.short}
+      </text>
+    `;
+  }
+
+  yPosition = tableStartY + headerHeight;
+
+  // Fila: Platos del día
+  svgContent += `
+    <rect x="${padding}" y="${yPosition}" 
+          width="${width - padding * 2}" height="${rowHeight}" 
+          fill="white" 
+          stroke="#e0e0e0" stroke-width="1"/>
+  `;
+
+  for (let i = 0; i < dias.length; i++) {
+    const dia = dias[i];
+    const plato = menuData[dia.key];
+    const x = padding + i * cellWidth;
+
+    // Línea vertical separadora
+    if (i > 0) {
+      svgContent += `
+        <line x1="${x}" y1="${yPosition}" 
+              x2="${x}" y2="${yPosition + rowHeight}" 
+              stroke="#e0e0e0" stroke-width="1"/>
+      `;
+    }
+
+    if (plato && plato.nombre) {
+      // Nombre del plato (wrapeado)
+      const nombrePlato = wrapText(plato.nombre, 12); // Menos caracteres por línea
+      let platoY = yPosition + 35;
+      const lineHeight = 22;
+      
+      // Centrar verticalmente basado en cantidad de líneas
+      const totalHeight = nombrePlato.length * lineHeight;
+      platoY = yPosition + (rowHeight - totalHeight) / 2 + lineHeight;
+
+      for (const linea of nombrePlato.slice(0, 4)) { // Máximo 4 líneas
+        svgContent += `
+          <text x="${x + cellWidth / 2}" y="${platoY}" 
+                font-family="DejaVu Sans, Liberation Sans, sans-serif" 
+                font-size="18" fill="#555" 
+                text-anchor="middle">
+            ${escapeXml(linea)}
+          </text>
+        `;
+        platoY += lineHeight;
+      }
+    }
+  }
+
+  yPosition += rowHeight;
+
+  // Footer
+  yPosition += 30;
+  svgContent += `
+    <rect x="0" y="${yPosition}" width="${width}" height="60" fill="#f8f9fa"/>
+    <text x="${width / 2}" y="${yPosition + 40}" 
+          font-family="DejaVu Sans, Liberation Sans, sans-serif" 
+          font-size="20" fill="#95a5a6" 
+          text-anchor="middle">
+      Generado con ❤️ por PlanEat
+    </text>
+  `;
+  yPosition += 60;
+
+  const svg = `
+    <svg width="${width}" height="${yPosition}" xmlns="http://www.w3.org/2000/svg">
+      ${svgContent}
+    </svg>
+  `;
+
+  return svg;
+}
+
+/**
+ * Calcula la altura del menú semanal en formato tabla
+ */
+function calculateMenuHeight(menuData: any, padding: number): number {
+  let height = 140; // Header con degradado
+  height += 80; // Header de tabla (días)
+  height += 120; // Fila de platos
+  height += 30; // Espacio antes del footer
+  height += 60; // Footer
+
+  return height;
+}
+

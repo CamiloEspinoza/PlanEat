@@ -6,6 +6,7 @@ export { addHouseholdMembersTool } from "./add-household-members";
 export { saveConversationStateTool } from "./save-conversation-state";
 export { sendReactionTool } from "./send-reaction";
 export { generateRecipeImageTool } from "./generate-recipe-image";
+export { generateWeeklyMenuImageTool } from "./generate-weekly-menu-image";
 
 // Export Frest API tools
 export { frestBuscarUsuarioTool } from "./frest-buscar-usuario";
@@ -14,3 +15,9 @@ export { frestCrearDireccionTool } from "./frest-crear-direccion";
 export { frestConsultarProductosTool } from "./frest-consultar-productos";
 export { frestCrearPedidoTool } from "./frest-crear-pedido";
 export { frestConsultarEstadoPedidoTool } from "./frest-consultar-estado-pedido";
+
+// Export Menu & Shopping List tools
+export { saveWeeklyMenuTool } from "./save-weekly-menu";
+export { saveShoppingListTool } from "./save-shopping-list";
+export { getShoppingListContextTool } from "./get-shopping-list-context";
+export { createFrestOrderFromListTool } from "./create-frest-order-from-list";

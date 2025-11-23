@@ -42,8 +42,8 @@ IMPORTANTE: Solo envía producto_id y cantidad en los items, NO incluyas el prec
       },
       forma_pago: {
         type: "string",
-        enum: ["webpay", "fpay", "oneclick", "efectivo"],
-        description: "Método de pago: webpay, fpay, oneclick, efectivo",
+        enum: ["webpay", "oneclick"],
+        description: "Método de pago: webpay (tarjeta crédito/débito) o oneclick (tarjeta guardada). NO se acepta efectivo en pedidos online.",
       },
       items: {
         type: "array",

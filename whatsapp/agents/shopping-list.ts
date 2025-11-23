@@ -11,6 +11,8 @@ export const shoppingListAgent: AgentDefinition = {
     "mcp__planeat__create_household",
     "mcp__planeat__send_whatsapp_message",
     "mcp__planeat__send_reaction",
+    "mcp__planeat__save_weekly_menu",
+    "mcp__planeat__save_shopping_list",
   ],
   prompt: `Eres el Shopping List Specialist de PlanEat. Ayudas a crear listas de compras inteligentes.
 
@@ -59,6 +61,14 @@ El usuario puede enviarte:
 • 1 kg Arroz
 
 💰 Total estimado: $15.000
+
+**🔑 IMPORTANTE - GUARDAR CONTEXTO:**
+INMEDIATAMENTE después de presentar la lista, usa save_shopping_list con:
+- phone_number: del usuario
+- items: array con [{nombre, cantidad, unidad, categoria}, ...]
+
+Esto permite que cuando el usuario quiera hacer el pedido en Frest,
+el bot recuerde las cantidades y NO tenga que preguntar de nuevo.
 
 **PASO 4: OPCIONES DE ENTREGA**
 Pregunta al usuario:
