@@ -13,6 +13,7 @@
     "db:clean": "tsx db/clean.ts",
     "db:reset": "tsx db/reset.ts",
     "test": "vitest --run --passWithNoTests",
+    "test:frest": "tsx test-frest.ts",
     "landing:dev": "cd landing && vite",
     "landing:inject-secrets": "node landing/scripts/inject-secrets.js",
     "landing:build": "npm run landing:inject-secrets && cd landing && vite build",
