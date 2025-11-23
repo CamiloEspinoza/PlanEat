@@ -100,7 +100,7 @@ sudo su - planeat
 
 ```bash
 cd /home/planeat
-git clone https://github.com/tu-usuario/planeat.git
+git clone https://github.com/CamiloEspinoza/planeat.git
 cd planeat/planeat
 ```
 
@@ -239,16 +239,9 @@ psql "$DATABASE_URL" -c "\dt"
 
 ## 🔧 Deploy con PM2
 
-### 1. Compilar el Proyecto
+### 1. Crear Archivo de Configuración PM2
 
-```bash
-cd /home/planeat/planeat/planeat
-npm run build
-```
-
-Debe completar sin errores.
-
-### 2. Crear Archivo de Configuración PM2
+**Nota:** Ya no necesitamos compilar TypeScript. Usamos `tsx` para ejecutar TypeScript directamente en producción.
 
 ```bash
 nano ecosystem.config.cjs
@@ -261,7 +254,9 @@ module.exports = {
   apps: [
     {
       name: "planeat",
-      script: "./dist/server.js",
+      script: "./server.ts",
+      interpreter: "node",
+      interpreter_args: "--loader tsx",
       instances: 1,
       exec_mode: "fork",
       autorestart: true,
@@ -280,13 +275,19 @@ module.exports = {
 };
 ```
 
-### 3. Crear Directorio de Logs
+**Beneficios de usar `tsx`:**
+- ✅ No necesitas extensiones `.js` en los imports
+- ✅ No necesitas compilar (más rápido deploy)
+- ✅ Mejores mensajes de error con source maps
+- ✅ Código más limpio y mantenible
+
+### 2. Crear Directorio de Logs
 
 ```bash
 mkdir -p logs
 ```
 
-### 4. Iniciar con PM2
+### 3. Iniciar con PM2
 
 ```bash
 # Iniciar aplicación
@@ -306,7 +307,7 @@ pm2 startup
 # Copiar y ejecutar el comando que PM2 te muestra
 ```
 
-### 5. Verificar que Funciona
+### 4. Verificar que Funciona
 
 ```bash
 # Probar endpoint de salud
@@ -497,18 +498,17 @@ cd /home/planeat/planeat/planeat
 # Pull cambios
 git pull origin main
 
-# Instalar nuevas dependencias
+# Instalar nuevas dependencias (si hay)
 npm install
-
-# Compilar
-npm run build
 
 # Ejecutar migraciones (si hay nuevas)
 npm run migrate
 
-# Reiniciar
+# Reiniciar (tsx carga automáticamente los cambios)
 pm2 restart planeat
 ```
+
+**Nota:** Ya no necesitas ejecutar `npm run build` porque usamos `tsx`.
 
 ### Backup de Base de Datos
 
