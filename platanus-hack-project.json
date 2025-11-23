@@ -1,4 +1,5 @@
 {
   "project-name": "PaanEat",
-  "project-description-spanish": "PlanEat es un asistente conversacional por WhatsApp que ayuda a familias a planificar sus comidas semanales, gestionar preferencias alimentarias y generar listas de compras inteligentes."
+  "project-description-spanish": "PlanEat es un asistente conversacional por WhatsApp que ayuda a familias a planificar sus comidas semanales, gestionar preferencias alimentarias y generar listas de compras inteligentes.",
+  "deploy-url": "https://planeat.life"
 }
