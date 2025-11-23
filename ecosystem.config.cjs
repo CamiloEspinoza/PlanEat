@@ -4,7 +4,7 @@ module.exports = {
       name: "planeat",
       script: "./server.ts",
       interpreter: "node",
-      interpreter_args: "--loader tsx",
+      interpreter_args: "--import tsx",
       instances: 1,
       exec_mode: "fork",
       autorestart: true,

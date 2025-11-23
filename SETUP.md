@@ -256,7 +256,7 @@ module.exports = {
       name: "planeat",
       script: "./server.ts",
       interpreter: "node",
-      interpreter_args: "--loader tsx",
+      interpreter_args: "--import tsx",
       instances: 1,
       exec_mode: "fork",
       autorestart: true,
@@ -275,7 +275,10 @@ module.exports = {
 };
 ```
 
+**Nota:** Usamos `--import tsx` en lugar de `--loader tsx` porque `--loader` está deprecado en Node.js v20+.
+
 **Beneficios de usar `tsx`:**
+
 - ✅ No necesitas extensiones `.js` en los imports
 - ✅ No necesitas compilar (más rápido deploy)
 - ✅ Mejores mensajes de error con source maps
